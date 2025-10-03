@@ -1,17 +1,21 @@
 module class_scores::class_scores{
-    //This is the code for a class score table in a single subject
-    use std::String;
-    use std::vector;
+    //This is the code for a class score table in a 10 subjects
+    use std::String; //this is used to import a string
+    use std::vector; //this is used to import a vector
+    use sui::error; //this is used to import the error module
 
-    const EInvalidScore: u64 = 1;
+    const EInvalidScore: u8 = 1; 
+    //this error means that the score is invalid
+    const EInvalidSubjectsLength: u8 = 2; 
+    //this means that the subjects scores provided for the student is invalid: greater than or less than ten
 
     public struct Student has key, store{
         id: UID,
         name: String,
-        score: u8,
+        scores: vector<u8>,
         address: address,
         level: u8,
-    }
+    }//this sturct stores the metadata of a student
 
     let students: vector<Student>;//this is a vector to hold all students
 
@@ -49,10 +53,17 @@ module class_scores::class_scores{
         address: address,
         level: u8
     ): Student{
+        let mut student_scores = vector::empty();//we created a vector that is empty
+        let num = 0;//this symbolizes the first subject score
+        let subject_size = 10;//every student offers 10 courses
+        while(num < subject_size){
+            vector::push_back(&mut student_scores, 0);
+            num = num + 1;
+        }
         let new _student = Student{
             id: ctx(new),
             name,
-            score: 0,
+            scores: student_scores,//we chnaged this from score to scores
             address,
             level,
         };
@@ -61,19 +72,43 @@ module class_scores::class_scores{
         new_student
     }
     
-    public fun add_student_score(
+    public fun add_student_scores(//this was changed from add_student_score to add_student_scores
         _: &TeacherCap,
         student: &mut Student,
-        new_score: u8
+        new_scores: vector<u8>
     ){
-        assert!(score <= 100, 1);
+        assert!(vector::length(new_scores) != 10, EInvalidSubjectsLength);
+        /* This method checks for both greater and less length in two lines
+        * assert!(vector::length(new_scores) > 10, 2);//this one is checking if the number of scores put in is greater than 10
+        * assert!(vector::length(new_scores) < 10, 3);//this one is checking if the number of scores put in is less than 10  
+        */
+        /*
+        * if(vector::length(new_scores) > 10 || vector::length(new_score) < 10){
+            abort EScoreLengthInvalid
+            //we can define the error as : const EScoreLengthInvalid = 1000;
+        }
+        */      
+        let subjects_len = 10;
+        let i = 0;
+        while(i < subjects_len){
+            assert!(vector::borrow(new_scores, i) <= 100, EInvalidScore);
+            i = i + 1;
+        }
         //assert!(condition, error_code);
         //this line means that if the condition is false, the program will abort with error code 1
-        
+
+        //add student scores through looping
+        let student_new_scores = vector::empty();//a new vector to store the student scores
+        let i = 0;
+        while(i < length){
+            vector::push_back(student_new_scores, vector::borrow(new_scores, i));
+            i = i + 1;
+        }
+        //created a new student
         let new_student = Student{
             id: student.id,
             name: student.name.clone(),
-            score: new_score,
+            scores: student_new_scores,
             address: student.address,
             level: student.level,
         }
